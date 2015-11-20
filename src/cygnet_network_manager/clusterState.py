@@ -69,12 +69,12 @@ class ClusterState(object):
     def keepalive(self):
         self.session.publish("ovs.sync_request", self.gre_endpoint[0])
         try:
-            most = max([health for health in self.gre_health.itervalues()])
+            most = max([health for health in list(self.gre_health.values())])
         except ValueError as e:
             print(e)
             return
         gre_health_tmp = deepcopy(self.gre_health)
-        for gre_endpoint, health in gre_health_tmp.iteritems():
+        for gre_endpoint, health in list(gre_health_tmp.items()):
             mask = [endpoint == gre_endpoint for endpoint in self.interface.endpoints]
             if (most - health) > 5 and sum(mask):
                 # unhealthy endpoint -- remove
@@ -133,7 +133,7 @@ class ClusterState(object):
                            [self.gre_endpoint[0]])
                 self.session.publish("ovs.sync_nodes", to_sync)
             self.gre_health[origin] += 1
-            self.gre_health[origin] = max([v for v in self.gre_health.itervalues()])
+            self.gre_health[origin] = max([v for v in list(self.gre_health.values())])
 
     @wamp.subscribe(u'ovs.hook_container')
     def hookContainer(self, container):

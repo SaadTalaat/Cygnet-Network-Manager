@@ -11,14 +11,15 @@ class Helper(object):
     def __init__(self, **kwargs):
         # Obtain network information
         self.args = dict()
-        for arg, value in kwargs.iteritems():
+        for arg, value in list(kwargs.items()):
             self.args[arg] = value
         print(self.args)
         empty_setup = {'interfaces': [],
                        'containers': [],
                        'endpoints': [],
                        'interface_class': self.args['internal-network'],
-                       'internal_ip': self.args['internal-addr']
+                       'internal_ip': self.args['internal-addr'],
+                       'external_iface': self.args['external-iface']
                        }
         interface = NetworkInterface(**empty_setup)
     # address is returned as a 2-tuple of strings addr,mask

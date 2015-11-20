@@ -84,13 +84,15 @@ def validate_ip(ctx, param, value):
 @click.option('--etcd-server-addr', envvar='CYGNET_ETCD_ADDR', default='0.0.0.0:7001', callback=validate_etcd_addr)
 @click.option('--internal-network', envvar='CYGNET_INTERNAL_TYPE', default='OpenvSwitch', callback=validate_net_type)
 @click.option('--internal-addr', envvar='CYGNET_INTERNAL_IP')
-def main(router_addr, router_realm, etcd_server_addr, internal_network, internal_addr):
+@click.option('--external-iface', envvar='CYGNET_EXTERNAL_IF')
+def main(router_addr, router_realm, etcd_server_addr, internal_network, internal_addr, external_iface):
     print(etcd_server_addr)
     kwargs = {'router-addr': router_addr,
               'internal-addr': internal_addr,
               'etcd-server-addr': tuple(etcd_server_addr.split(":")),
               'internal-network': internal_network,
-              'router-realm': router_realm
+              'router-realm': router_realm,
+              'external-iface': external_iface
               }
     print(kwargs)
     helper = Helper(**kwargs)

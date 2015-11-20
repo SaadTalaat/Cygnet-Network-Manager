@@ -56,7 +56,7 @@ class EtcdClusterClient(etcd.Client):
                 self.update(node)
                 return True
             else:
-                for key2, value in container.items():
+                for key2, value in list(container.items()):
                     current_key = container_key + '/' + key2
                     node = self.get(current_key)
                     node.value = container[key]
