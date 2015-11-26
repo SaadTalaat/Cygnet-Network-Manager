@@ -15,6 +15,17 @@ class EtcdClusterClient(etcd.Client):
         self.nodeId = str(nodeId)
         print("NODE")
 
+    def initStore(self):
+        try:
+            self.write("nodes", None, dir=True)
+            return True
+        except etcd.EtcdNotFile:
+            try:
+                self.read("nodes")
+                return True
+            except etcd.EtcdKeyNotFoud:
+                return False
+
     def _lockNode(self, nodePath):
         # traverse node path - check any parent nodes are locked.
         free = False
@@ -44,6 +55,53 @@ class EtcdClusterClient(etcd.Client):
             self.update(lock)
         except:
             return
+
+    def addNode(self):
+        node_key = "nodes/" + self.nodeId
+        try:
+            self.write(node_key, None, dir=True)
+            self.write(node_key+"/state", ttl=60)
+        except etcd.EtcdNotFile:
+            self.write(node_key+"/state", 1, ttl=60)
+
+        try:
+            self.write(node_key+"/interfaces",None, dir=True)
+        except etcd.EtcdNotFile:
+            pass
+
+        interfaces = self.get(node_key+"/interfaces/")
+        read_interfaces = []
+        if interfaces:
+            for interface in interfaces.children:
+                interface = self.get(interface.key)
+                empty = {"Id": None,
+                         "Name": None,
+                         "Address":None
+                         }
+                for leaf in interface.children:
+                    empty[leaf.key.split("/")[-1]] = leaf.value
+                read_interfaces.append(empty)
+        return read_interfaces
+
+    def addInterface(self, interface):
+        interface_key = "nodes/" + self.nodeId + "/interfaces/" + interface['Id']
+        print("adding iface "+interface_key)
+        try:
+            self.write(interface_key, None, dir=True)
+            for key, value in interface.items():
+                current_key = interface_key+ "/" + key
+                self.write(current_key, value, dir=False)
+            return True
+        except:
+            return False
+
+    def removeInterface(self, interface):
+        interface_key = "nodes/" + self.nodeId + "/interfaces/" + interface['Id']
+        try:
+            self.delete(interface_key, recursive=True)
+            return True
+        except:
+            True
 
     def updateContainer(self, container, key=None):
         container_key = "/".join(["nodes", self.nodeId, container["Id"]])

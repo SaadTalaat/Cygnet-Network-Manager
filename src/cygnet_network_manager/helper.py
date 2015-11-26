@@ -4,6 +4,8 @@ from autobahn.twisted.wamp import ApplicationRunner
 from cygnet_common.NetworkInterface import NetworkInterface
 from cygnet_common import strtypes
 
+from threading import Thread
+from cygnet_network_manager.plugin import docker
 
 class Helper(object):
 
@@ -21,12 +23,15 @@ class Helper(object):
                        'internal_ip': self.args['internal-addr'],
                        'external_iface': self.args['external-iface']
                        }
+        t = Thread(target=docker.start, args=(empty_setup,))
+        t.setDaemon(True)
         interface = NetworkInterface(**empty_setup)
     # address is returned as a 2-tuple of strings addr,mask
         self.address = interface.initalize()
         ClusterState.address1 = self.address
         ClusterState.interface = interface
         ClusterState.etcd_addr = self.args['etcd-server-addr']
+        t.start()
 
     # simply run the client
     def connect(self):

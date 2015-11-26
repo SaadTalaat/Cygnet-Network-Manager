@@ -3,9 +3,9 @@ from autobahn import wamp
 from cygnet_common.design import Task
 from cygnet_network_manager.etcdCluster import EtcdClusterClient
 from cygnet_common import strtypes
+from cygnet_common.Meta.Patterns import Singleton
 
-
-class ClusterState(object):
+class ClusterState(object,metaclass=Singleton):
     '''
     an Cluster state is merely an object which
     implements few pub/sub methods. those methods
@@ -41,6 +41,7 @@ class ClusterState(object):
         these values will be also communicated via etcd to construct a
         non-horizontal representation of the network.
     '''
+    __metaclass__ = Singleton
     address1 = None
     interface = None
     etcd_addr = None
@@ -61,11 +62,19 @@ class ClusterState(object):
         On initialization a mere sync request is sent and
         components are set to action.
         '''
+        self.interfaces = {}
         self.session.publish("ovs.sync_request", self.gre_endpoint[0])
         self.health_check = Task.TaskInterval(10, self.keepalive)
         self.health_check.start()
-        self.etcd_client = EtcdClusterClient(self.etcd_addr[0], self.session.node_id, int(self.etcd_addr[1]))
-
+        self.etcd_client = EtcdClusterClient(self.etcd_addr[0],
+                                             self.session.node_id,
+                                             int(self.etcd_addr[1])
+                                             )
+        self.etcd_client.initStore()
+        prev_interfaces = self.etcd_client.addNode()
+        if prev_interfaces:
+            for iface in prev_interfaces:
+                self.interfaces[iface["Id"]] = iface
     def keepalive(self):
         self.session.publish("ovs.sync_request", self.gre_endpoint[0])
         try:
@@ -83,6 +92,22 @@ class ClusterState(object):
                 self.gre_health.pop(gre_endpoint)
                 # Broadcast modifications
                 self.session.publish("ovs.sync_nodes", self.interface.endpoints)
+
+    def addInterface(self, iface_id, iface_config):
+        iface_name = self.interface.initContainerNetwork(iface_id, iface_config)
+        interface = {"Id": iface_id,
+                     "Name": iface_name,
+                     "Address": iface_config['Gateway']
+                     }
+        self.etcd_client.addInterface(interface)
+        self.interfaces[iface_id] = interface
+
+    def removeInterface(self, iface_id):
+        interface = self.interfaces[iface_id]
+        removed = self.interface.destroyContainerNetwork(interface["Name"])
+        if not removed:
+            raise ValueError
+        self.etcd_client.removeInterface(interface)
 
     # What should we sync?
     # 1- GRE endpoints

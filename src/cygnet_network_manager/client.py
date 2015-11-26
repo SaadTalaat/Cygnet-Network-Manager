@@ -32,6 +32,7 @@ class Client(ApplicationSession):
 
         print("Helper Attached to Router")
         self.cluster_state.init()
+        print("ClusterID:"+str(id(self.cluster_state)))
         yield self.subscribe(self.cluster_state)
 
     def leave(self, reason=None, log_message=None):

@@ -82,8 +82,8 @@ def validate_ip(ctx, param, value):
 @click.option('--router-addr', envvar='CYGNET_CROSSBAR_ADDR', callback=validate_router_addr)
 @click.option('--router-realm', envvar='CYGNET_CROSSBAR_REALM', default='cygnet')
 @click.option('--etcd-server-addr', envvar='CYGNET_ETCD_ADDR', default='0.0.0.0:7001', callback=validate_etcd_addr)
-@click.option('--internal-network', envvar='CYGNET_INTERNAL_TYPE', default='OpenvSwitch', callback=validate_net_type)
-@click.option('--internal-addr', envvar='CYGNET_INTERNAL_IP')
+@click.option('--internal-network', envvar='CYGNET_INTERNAL_TYPE', default='openvswitch', callback=validate_net_type)
+@click.option('--internal-addr', envvar='CYGNET_INTERNAL_IP',default='')
 @click.option('--external-iface', envvar='CYGNET_EXTERNAL_IF')
 def main(router_addr, router_realm, etcd_server_addr, internal_network, internal_addr, external_iface):
     print(etcd_server_addr)
