@@ -5,7 +5,7 @@ from cygnet_common.NetworkInterface import NetworkInterface
 from cygnet_common import strtypes
 
 from threading import Thread
-from cygnet_network_manager.plugin import docker
+from cygnet_network_manager.components.plugin import docker
 
 class Helper(object):
 

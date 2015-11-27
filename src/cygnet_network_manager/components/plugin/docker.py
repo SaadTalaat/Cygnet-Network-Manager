@@ -1,6 +1,8 @@
 from twisted.web import resource, server
 import json
 from cygnet_network_manager.clusterState import ClusterState
+from cygnet_common.generic.Container import Container
+from cygnet_common.generic.Network import Network
 ## remove
 from twisted.internet import reactor
 
@@ -41,7 +43,11 @@ class NetworkDriver(resource.Resource):
         return {
                 'GetCapabilities': self.getCapabilities,
                 'CreateNetwork': self.createNetwork,
-                'DeleteNetwork': self.deleteNetwork
+                'DeleteNetwork': self.deleteNetwork,
+                'CreateEndpoint': self.createEndpoint,
+                'DeleteEndpoint': self.deleteEndpoint,
+                'Join': self.join,
+                'EndpointOperInfo': self.endpointInfo
                 }.get(op)(request)
 
     def getCapabilities(self, request):
@@ -55,26 +61,76 @@ class NetworkDriver(resource.Resource):
         return server.NOT_DONE_YET
 
     def createNetwork(self, request):
+        payload = {}
         specs = request.content.read().decode('utf-8')
         specs = json.loads(specs)
-        network_id = specs['NetworkID']
-        self.cluster_state.addInterface(network_id, specs['IPv4Data'][0])
-        response = json.dumps({}).encode('utf-8')
+        print(specs)
+        print("DONEEEE!!")
+        network = Network(specs['NetworkID'], specs['IPv4Data'][0])
+        try:
+            self.cluster_state.addInterface(network_id, specs['IPv4Data'][0])
+        except Exception as e:
+            error = str(e)
+            payload = {"Err":error}
+        response = json.dumps(payload).encode('utf-8')
         request.write(response)
         request.finish()
         return server.NOT_DONE_YET
 
     def deleteNetwork(self, request):
+        payload = {}
         body = request.content.read().decode('utf-8')
         body = json.loads(body)
         print(body)
         network_id = body["NetworkID"]
-        self.cluster_state.removeInterface(network_id)
-        response = json.dumps({}).encode('utf-8')
+        try:
+            self.cluster_state.removeInterface(network_id)
+        except Exception as e:
+            error = str(e)
+            payload = {"Err":error}
+        response = json.dumps(payload).encode('utf-8')
         request.write(response)
         request.finish()
         return server.NOT_DONE_YET
 
+    def createEndpoint(self, request):
+        payload = {}
+        specs = request.content.read().decode('utf-8')
+        specs = json.loads(specs)
+        network_id = specs["NetworkID"]
+        try:
+            assert 1==2
+        except Exception as e:
+            error = str(e)
+            payload= {"Err": error}
+            raise e
+        response = json.dumps(payload).encode('utf-8')
+        request.write(response)
+        request.finish()
+        return server.NOT_DONE_YET
+
+    def deleteEndpoint(self, request):
+        payload = {}
+        response = json.dumps(payload).encode('utf-8')
+        request.write(response)
+        request.finish()
+        return server.NOT_DONE_YET
+
+    def join(self, request):
+        payload = {}
+        print(request.content.read().decode('utf-8'))
+        response = json.dumps(payload).encode('utf-8')
+        request.write(response)
+        request.finish()
+        return server.NOT_DONE_YET
+
+    def endpointInfo(self, request):
+        payload = {'Value':{}}
+        print(request.content.read().decode('utf-8'))
+        response = json.dumps(payload).encode('utf-8')
+        request.write(response)
+        request.finish()
+        return server.NOT_DONE_YET
 
 class CygnetDockerPlugin(resource.Resource):
     isLeaf = False

@@ -71,10 +71,11 @@ class ClusterState(object,metaclass=Singleton):
                                              int(self.etcd_addr[1])
                                              )
         self.etcd_client.initStore()
-        prev_interfaces = self.etcd_client.addNode()
-        if prev_interfaces:
-            for iface in prev_interfaces:
-                self.interfaces[iface["Id"]] = iface
+        prev_networks = self.etcd_client.addNode()
+        if prev_networks:
+            for network in prev_networks:
+                self.interfaces[network.id] = network
+
     def keepalive(self):
         self.session.publish("ovs.sync_request", self.gre_endpoint[0])
         try:
@@ -93,21 +94,19 @@ class ClusterState(object,metaclass=Singleton):
                 # Broadcast modifications
                 self.session.publish("ovs.sync_nodes", self.interface.endpoints)
 
-    def addInterface(self, iface_id, iface_config):
-        iface_name = self.interface.initContainerNetwork(iface_id, iface_config)
-        interface = {"Id": iface_id,
-                     "Name": iface_name,
-                     "Address": iface_config['Gateway']
-                     }
-        self.etcd_client.addInterface(interface)
-        self.interfaces[iface_id] = interface
+    def addNetwork(self, network):
+        network = self.interface.initContainerNetwork(network)
+        if not network:
+            raise RuntimeErorr("error: check if network is well configured")
+        self.etcd_client.addNetwork(network)
+        self.interfaces[network.id] = network
 
-    def removeInterface(self, iface_id):
-        interface = self.interfaces[iface_id]
-        removed = self.interface.destroyContainerNetwork(interface["Name"])
+    def removeInterface(self, network_id):
+        network = self.interfaces[network_id]
+        removed = self.interface.destroyContainerNetwork(network)
         if not removed:
-            raise ValueError
-        self.etcd_client.removeInterface(interface)
+            raise RuntimeError("error: check if network is well configured")
+        self.etcd_client.removeNetwork(network)
 
     # What should we sync?
     # 1- GRE endpoints
@@ -162,19 +161,20 @@ class ClusterState(object,metaclass=Singleton):
 
     @wamp.subscribe(u'ovs.hook_container')
     def hookContainer(self, container):
-        if str(container["Node"]) != self.session.node_id:
+        if str(container.node) != self.session.node_id:
             return
         print(container)
-        if container["Address"]:
+        if container.address:
             self.interface.containers.append(container)
             return
         return
 
     @wamp.subscribe(u'ovs.unhook_container')
     def unhookContainer(self, container):
-        if str(container["Node"]) != self.session.node_id:
+        if str(container.node) != self.session.node_id:
             return
-        if container["Address"]:
-            for idx in range(len(self.interface.containers)):
-                if self.interface.containers[idx]["Id"] == container["Id"]:
-                    self.interface.containers.pop(idx)
+        if container.address:
+            self.interface.containers.remove(container)
+            #for idx in range(len(self.interface.containers)):
+            #    if self.interface.containers[idx].id == container.id:
+            #        self.interface.containers.pop(idx)

@@ -1,5 +1,5 @@
 import etcd
-
+from cygnet_common.generic.Network import Network
 
 class EtcdClusterClient(etcd.Client):
     '''
@@ -65,46 +65,49 @@ class EtcdClusterClient(etcd.Client):
             self.write(node_key+"/state", 1, ttl=60)
 
         try:
-            self.write(node_key+"/interfaces",None, dir=True)
+            self.write(node_key+"/networks",None, dir=True)
         except etcd.EtcdNotFile:
             pass
 
-        interfaces = self.get(node_key+"/interfaces/")
-        read_interfaces = []
-        if interfaces:
-            for interface in interfaces.children:
-                interface = self.get(interface.key)
+        networks = self.get(node_key+"/networks/")
+        read_networks = []
+        if networks:
+            for network in networks.children:
+                network = self.get(network.key)
                 empty = {"Id": None,
                          "Name": None,
-                         "Address":None
+                         "Address":None,
+                         "Config": None
                          }
-                for leaf in interface.children:
+                for leaf in network.children:
                     empty[leaf.key.split("/")[-1]] = leaf.value
-                read_interfaces.append(empty)
-        return read_interfaces
+                network = Network(empty['Id'], empty['Config'])
+                network.name = empty['Name']
+                read_networks.append(network)
+        return read_networks
 
-    def addInterface(self, interface):
-        interface_key = "nodes/" + self.nodeId + "/interfaces/" + interface['Id']
-        print("adding iface "+interface_key)
+    def addNetwork(self, network):
+        network_key = "nodes/" + self.nodeId + "/networks/" + network.id
+        print("adding iface "+ network_key)
         try:
-            self.write(interface_key, None, dir=True)
-            for key, value in interface.items():
-                current_key = interface_key+ "/" + key
+            self.write(network_key, None, dir=True)
+            for key, value in network.items():
+                current_key = network_key+ "/" + key
                 self.write(current_key, value, dir=False)
             return True
         except:
             return False
 
-    def removeInterface(self, interface):
-        interface_key = "nodes/" + self.nodeId + "/interfaces/" + interface['Id']
+    def removeNetwork(self, network):
+        network_key = "nodes/" + self.nodeId + "/networks/" + network.id
         try:
-            self.delete(interface_key, recursive=True)
+            self.delete(network_key, recursive=True)
             return True
         except:
             True
 
     def updateContainer(self, container, key=None):
-        container_key = "/".join(["nodes", self.nodeId, container["Id"]])
+        container_key = "/".join(["nodes", self.nodeId, container.id])
         if key:
             current_key = container_key + '/' + key
         try:
