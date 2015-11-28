@@ -68,7 +68,7 @@ class ClusterState(object,metaclass=Singleton):
         self.health_check.start()
         self.etcd_client = EtcdClusterClient(self.etcd_addr[0],
                                              self.session.node_id,
-                                             int(self.etcd_addr[1])
+                                             port=int(self.etcd_addr[1])
                                              )
         self.etcd_client.initStore()
         prev_networks = self.etcd_client.addNode()
@@ -118,7 +118,7 @@ class ClusterState(object,metaclass=Singleton):
         # to the same number of endpoints
         # a one-node cluster should receive a full list of same up
         # endpoints from another
-        if len(self.interface.endpoints) == 0 and len(gre_endpoints) != 0:
+        elif len(self.interface.endpoints) == 0 and len(gre_endpoints) != 0:
             self.interface.initContainerNetwork()
             for endpoint in gre_endpoints:
                 self.interface.endpoints.append(endpoint)

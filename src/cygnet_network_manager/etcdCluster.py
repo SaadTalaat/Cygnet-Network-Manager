@@ -71,7 +71,7 @@ class EtcdClusterClient(etcd.Client):
 
         networks = self.get(node_key+"/networks/")
         read_networks = []
-        if networks:
+        if networks._children:
             for network in networks.children:
                 network = self.get(network.key)
                 empty = {"Id": None,
@@ -80,8 +80,10 @@ class EtcdClusterClient(etcd.Client):
                          "Config": None
                          }
                 for leaf in network.children:
+                    for foo in leaf.children:
+                        print(foo)
                     empty[leaf.key.split("/")[-1]] = leaf.value
-                network = Network(empty['Id'], empty['Config'])
+                network = Network(empty['Id'], config=empty['Config'])
                 network.name = empty['Name']
                 read_networks.append(network)
         return read_networks
