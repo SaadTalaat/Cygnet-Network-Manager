@@ -118,7 +118,7 @@ class ClusterState(object,metaclass=Singleton):
         # to the same number of endpoints
         # a one-node cluster should receive a full list of same up
         # endpoints from another
-        elif len(self.interface.endpoints) == 0 and len(gre_endpoints) != 0:
+        if len(self.interface.endpoints) == 0 and len(gre_endpoints) != 0:
             self.interface.initContainerNetwork()
             for endpoint in gre_endpoints:
                 self.interface.endpoints.append(endpoint)
