@@ -4,6 +4,7 @@ from cygnet_common.design import Task
 from cygnet_network_manager.etcdCluster import EtcdClusterClient
 from cygnet_common import strtypes
 from cygnet_common.Meta.Patterns import Singleton
+from cygnet_common.generic.Container import Container
 
 class ClusterState(object,metaclass=Singleton):
     '''
@@ -161,6 +162,12 @@ class ClusterState(object,metaclass=Singleton):
 
     @wamp.subscribe(u'ovs.hook_container')
     def hookContainer(self, container):
+        if not isinstance(container, Container):
+            # WAMP received dict
+             c = Container(container['Id'], container['Node'])
+             c.address = container['Address']
+             container = c
+
         if str(container.node) != self.session.node_id:
             return
         print(container)
@@ -171,6 +178,12 @@ class ClusterState(object,metaclass=Singleton):
 
     @wamp.subscribe(u'ovs.unhook_container')
     def unhookContainer(self, container):
+        if not isinstance(container, Container):
+            # WAMP received dict
+             c = Container(container['Id'], container['Node'])
+             c.address = container['Address']
+             container = c
+
         if str(container.node) != self.session.node_id:
             return
         if container.address:
